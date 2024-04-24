@@ -98,7 +98,7 @@ async def youtube_title(bot, url, text):
         video_name      = re.findall(r'<title[^>]*>([^<]+) - YouTube[\s]*</title>', text)[0] # get title, removing "- YouTube" from the end
         return bot.client.format_text(
             '{color}{green}Video{color}: {bold}{video_name}{bold} {color}{green}Channel{color}: {bold}{channel_name}{bold}',
-            video_name = video_name.strip(),
+            video_name = html.unescape(video_name.strip()),
             channel_name = channel_name.strip()
         )
     except IndexError:
