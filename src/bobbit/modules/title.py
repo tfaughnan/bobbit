@@ -94,15 +94,25 @@ async def youtube_title(bot, url, text):
     try:
         # finding channel name can't use regex search for HTML since YouTube sends a pile of JSON that's assembled client side
         # current regex into the JSON may break if YouTube allows " characters in channel names
-        channel_name    = re.findall(r',"author":"([^"]*)",', text)[0]
-        video_name      = re.findall(r'<title[^>]*>([^<]+) - YouTube[\s]*</title>', text)[0] # get title, removing "- YouTube" from the end
+        try:
+            channel_name = re.findall(r',"author":"([^"]*)",', text)[0]
+        except IndexError:
+            # XXX: 2024-06-08 - Alternative means of extracting channel name (Google sending back different JSON)
+            channel_name = re.findall(r'Unsubscribe from.*?"text":"([^"]+)"', text)[1]
+
+        try:
+            video_name   = re.findall(r'<title[^>]*>([^<]+) - YouTube[\s]*</title>', text)[0] # get title, removing "- YouTube" from the end
+        except IndexError:
+            # XXX: 2024-06-08 - Alternative means of extracting video name (Google sending back different JSON)
+            video_name   = re.findall(r'videoPrimaryInfoRenderer.*?"text":"([^"]+)"', text)[0]
+
         return bot.client.format_text(
             '{color}{green}Video{color}: {bold}{video_name}{bold} {color}{green}Channel{color}: {bold}{channel_name}{bold}',
-            video_name = html.unescape(video_name.strip()),
+            video_name   = html.unescape(video_name.strip()),
             channel_name = channel_name.strip()
         )
     except IndexError:
-        logging.warning('Unable to find channel name for %s, YouTube formatting may have changed', url)
+        logging.warning('Unable to find channel or video name for %s, YouTube formatting may have changed', url)
         return None
 
 # Reddit Command
