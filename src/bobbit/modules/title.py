@@ -104,7 +104,11 @@ async def youtube_title(bot, url, text):
             video_name   = re.findall(r'<title[^>]*>([^<]+) - YouTube[\s]*</title>', text)[0] # get title, removing "- YouTube" from the end
         except IndexError:
             # XXX: 2024-06-08 - Alternative means of extracting video name (Google sending back different JSON)
-            video_name   = re.findall(r'videoPrimaryInfoRenderer.*?"text":"([^"]+)"', text)[0]
+            video_name   = re.findall(r'videoPrimaryInfoRenderer.*?"text":"(.*?)"}', text)[0]
+
+        # XXX: Escape backslashed strings, https://stackoverflow.com/a/57192592
+        video_name = video_name.encode('latin-1', 'backslashreplace')\
+                               .decode('unicode-escape')
 
         return bot.client.format_text(
             '{color}{green}Video{color}: {bold}{video_name}{bold} {color}{green}Channel{color}: {bold}{channel_name}{bold}',
