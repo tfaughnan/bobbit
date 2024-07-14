@@ -2,6 +2,7 @@
 
 import logging
 import html
+import json
 import re
 
 from bobbit.utils import strip_html
@@ -92,31 +93,21 @@ async def youtube_title(bot, url, text):
         return None
 
     try:
-        # finding channel name can't use regex search for HTML since YouTube sends a pile of JSON that's assembled client side
-        # current regex into the JSON may break if YouTube allows " characters in channel names
-        try:
-            channel_name = re.findall(r',"author":"([^"]*)",', text)[0]
-        except IndexError:
-            # XXX: 2024-06-08 - Alternative means of extracting channel name (Google sending back different JSON)
-            channel_name = re.findall(r'Unsubscribe from.*?"text":"([^"]+)"', text)[1]
-
-        try:
-            video_name   = re.findall(r'<title[^>]*>([^<]+) - YouTube[\s]*</title>', text)[0] # get title, removing "- YouTube" from the end
-        except IndexError:
-            # XXX: 2024-06-08 - Alternative means of extracting video name (Google sending back different JSON)
-            video_name   = re.findall(r'videoPrimaryInfoRenderer.*?"text":"(.*?)"}', text)[0]
-
-        # XXX: Escape backslashed strings, https://stackoverflow.com/a/57192592
-        video_name = video_name.encode('latin-1', 'backslashreplace')\
-                               .decode('unicode-escape')
+        m = re.search(r'<script[^>]*>var\s+ytInitialData\s*=\s*(?P<data>\{.+\});</script>', text)
+        if not m:
+            raise re.error('No regex match')
+        data = json.loads(m.group('data'))
+        details = data['playerOverlays']['playerOverlayRenderer']['videoDetails']['playerOverlayVideoDetailsRenderer']
+        video_name = details['title']['simpleText']
+        channel_name = details['subtitle']['runs'][0]['text']
 
         return bot.client.format_text(
             '{color}{green}Video{color}: {bold}{video_name}{bold} {color}{green}Channel{color}: {bold}{channel_name}{bold}',
-            video_name   = html.unescape(video_name.strip()),
+            video_name   = video_name.strip(),
             channel_name = channel_name.strip()
         )
-    except IndexError:
-        logging.warning('Unable to find channel or video name for %s, YouTube formatting may have changed', url)
+    except (re.error, json.JSONDecodeError, IndexError, KeyError) as e:
+        logging.warning('Unable to find channel or video name for %s, YouTube formatting may have changed: %s', url, e)
         return None
 
 # Reddit Command
