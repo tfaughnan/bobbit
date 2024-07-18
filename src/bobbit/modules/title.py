@@ -88,6 +88,8 @@ async def youtube_title(bot, url, text):
     # check that this is a YouTube *video* URL specifically
     if not any([
         re.search(r'http[^\s]+youtube.com/watch\?v=', url),
+        re.search(r'http[^\s]+youtube.com/live/', url),
+        re.search(r'http[^\s]+youtube.com/shorts/', url),
         re.search(r'http[^\s]+youtu.be/', url),
     ]):
         return None
@@ -97,9 +99,14 @@ async def youtube_title(bot, url, text):
         if not m:
             raise re.error('No regex match')
         data = json.loads(m.group('data'))
-        details = data['playerOverlays']['playerOverlayRenderer']['videoDetails']['playerOverlayVideoDetailsRenderer']
-        video_name = details['title']['simpleText']
-        channel_name = details['subtitle']['runs'][0]['text']
+        if '/shorts/' in url:
+            details = data['overlay']['reelPlayerOverlayRenderer']['reelPlayerHeaderSupportedRenderers']['reelPlayerHeaderRenderer']
+            video_name = details['reelTitleText']['runs'][0]['text']
+            channel_name = details['channelTitleText']['runs'][0]['text']
+        else:
+            details = data['playerOverlays']['playerOverlayRenderer']['videoDetails']['playerOverlayVideoDetailsRenderer']
+            video_name = details['title']['simpleText']
+            channel_name = details['subtitle']['runs'][0]['text']
 
         return bot.client.format_text(
             '{color}{green}Video{color}: {bold}{video_name}{bold} {color}{green}Channel{color}: {bold}{channel_name}{bold}',
