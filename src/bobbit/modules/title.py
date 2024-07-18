@@ -11,7 +11,7 @@ from bobbit.utils import strip_html
 
 NAME    = 'title'
 ENABLE  = True
-PATTERN = r'.*(?P<url>http[^\s]+).*'
+PATTERN = r'.*(?P<url>https?://[^\s]+).*'
 USAGE   = '''Usage: <url>
 Looks up title of URL.
 Example:
@@ -87,10 +87,10 @@ async def mastodon_title(bot, url, text):
 async def youtube_title(bot, url, text):
     # check that this is a YouTube *video* URL specifically
     if not any([
-        re.search(r'http[^\s]+youtube.com/watch\?v=', url),
-        re.search(r'http[^\s]+youtube.com/live/', url),
-        re.search(r'http[^\s]+youtube.com/shorts/', url),
-        re.search(r'http[^\s]+youtu.be/', url),
+        re.search(r'https?://[^\s]+youtube.com/watch\?v=', url),
+        re.search(r'https?://[^\s]+youtube.com/live/', url),
+        re.search(r'https?://[^\s]+youtube.com/shorts/', url),
+        re.search(r'https?://[^\s]+youtu.be/', url),
     ]):
         return None
 
@@ -119,7 +119,7 @@ async def youtube_title(bot, url, text):
 
 # Reddit Command
 
-REDDIT_PATTERN = r'.*(?P<url>http[^\s]+reddit.com/[^\s]+).*'
+REDDIT_PATTERN = r'.*(?P<url>https?://[^\s]+reddit.com/[^\s]+).*'
 
 async def reddit_title(bot, message, url):
     async with bot.http_client.get(url) as response:
